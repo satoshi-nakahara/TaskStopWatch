@@ -1,0 +1,11 @@
+[package]
+name = "taskstopwatch"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+eframe = "0.33.0"
+chrono = "0.4"
+arboard = "2.1"
+winapi = { version = "0.3", features = ["winuser"] }
+widestring = "0.5"
