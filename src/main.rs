@@ -235,9 +235,30 @@ fn new_frame(bgcolor: egui::Color32) -> egui::Frame {
 // アプリケーションの描画とロジックを実装
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        //egui::CentralPanel::default().show(ctx, |ui| {
+        // compute current time and elapsed first so we can decide background color
+        let now_instant = Instant::now();
+        let elapsed = now_instant.duration_since(self.start);
+        let secs = elapsed.as_secs();
+        let elapsed_h = secs / 3600;
+        let elapsed_m = (secs % 3600) / 60;
+        let elapsed_s = secs % 60;
+
+        // If we have an end_instant and it's passed, switch background to a light red
+        let is_over = if let Some(end_inst) = self.end_instant {
+            now_instant > end_inst
+        } else {
+            false
+        };
+        let bgcolor = if is_over {
+            // light red background when over time
+            egui::Color32::from_rgb(255, 200, 200)
+        } else {
+            // normal yellow
+            egui::Color32::from_rgb(255, 250, 0)
+        };
+
         egui::CentralPanel::default()
-            .frame(new_frame(egui::Color32::from_rgb(255, 250, 0)))
+            .frame(new_frame(bgcolor))
             .show(ctx, |ui| {
                 // Add a small left margin (~2mm) in pixels computed from points and
                 // the current pixels_per_point scaling so it respects DPI scaling.
@@ -249,13 +270,10 @@ impl eframe::App for MyApp {
                 ui.horizontal(|ui| {
                     ui.add_space(left_px);
                     ui.vertical(|ui| {
-                        // 現在時刻と経過時間を計算
-                        let now_instant = Instant::now();
-                        let elapsed = now_instant.duration_since(self.start);
-                        let secs = elapsed.as_secs();
-                        let hh = secs / 3600;
-                        let mm = (secs % 3600) / 60;
-                        let ss = secs % 60;
+                        // use precomputed current time and elapsed
+                        let hh = elapsed_h;
+                        let mm = elapsed_m;
+                        let ss = elapsed_s;
 
                         // 終了時刻（あれば）を上部に表示（〆の右に残り/経過時間を表示）
                         if let Some(end_local) = &self.end_time_local {
@@ -276,7 +294,7 @@ impl eframe::App for MyApp {
                                         );
                                         ui.add_space(8.0);
                                         ui.label(
-                                            RichText::new(format!("残り時間 {:02}:{:02}:{:02}", rh, rm, rs))
+                                            RichText::new(format!("残り時間 {:02}:{:02}", rm, rs))
                                                 .color(Color32::BLACK)
                                                 .size(14.0)
                                                 .strong(),
@@ -297,7 +315,7 @@ impl eframe::App for MyApp {
                                         );
                                         ui.add_space(8.0);
                                         ui.label(
-                                            RichText::new(format!("経過時間 {:02}:{:02}:{:02}", oh, om, os))
+                                            RichText::new(format!("{:02}:{:02} 超過", om, os))
                                                 .color(Color32::BLACK)
                                                 .size(14.0)
                                                 .strong(),
@@ -317,7 +335,7 @@ impl eframe::App for MyApp {
 
                         // 経過時間を hh:mm:ss 形式で表示
                         ui.label(
-                            RichText::new(format!("経過時間 {:02}:{:02}:{:02}", hh, mm, ss))
+                            RichText::new(format!("{:02}:{:02} 経過", mm, ss))
                                 .color(Color32::BLACK)
                                 .size(20.0)       // フォントサイズ（ポイント）
                                 .strong()         // 太字
